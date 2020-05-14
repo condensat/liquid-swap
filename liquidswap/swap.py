@@ -35,7 +35,8 @@ from liquidswap.util import (
 def propose(amount_p, asset_p,
             amount_r, asset_r,
             connection,
-            fee_rate=None):
+            fee_rate=None,
+            address=None):
     """Propose a swap
 
     Proposer (p) sends amount_p of asset_p.
@@ -56,7 +57,10 @@ def propose(amount_p, asset_p,
 
     is_mainnet = connection.getblockchaininfo().get('chain') == 'liquidv1'
 
-    c_address_p = connection.getnewaddress()
+    if address == None:
+        c_address_p = connection.getnewaddress()
+    else:
+        c_address_p = address
     u_address_p = connection.getaddressinfo(c_address_p)['unconfidential']
 
     txu = connection.createrawtransaction(
@@ -249,7 +253,8 @@ def accept(tx_p,
            amount_r, asset_r,
            map_amount_p, map_asset_p, unspents_details_p,
            connection,
-           fee_rate=None):
+           fee_rate=None,
+           address=None):
     """Accept a (parsed) swap proposal
 
     Fund, blind and sign the transaction. Should be used with outputs from
@@ -258,7 +263,10 @@ def accept(tx_p,
 
     logging.info('Accepting swap proposal [2/3]')
 
-    c_address_r = connection.getnewaddress()
+    if address == None:
+        c_address_r = connection.getnewaddress()
+    else:
+        c_address_r = address
     u_address_r = connection.validateaddress(c_address_r)['unconfidential']
     u_address_p = connection.validateaddress(c_address_p)['unconfidential']
     logging.debug('Receiver address: {}'.format(u_address_r))
