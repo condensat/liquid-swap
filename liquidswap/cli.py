@@ -30,7 +30,7 @@ def critical(title='', message='', start_over=True):
         sys.exit(1)
 
 
-ConnParams = namedtuple('ConnParams', ['credentials', 'is_mainnet'])
+ConnParams = namedtuple('ConnParams', ['credentials', 'is_mainnet', 'address'])
 
 
 @click.group()
@@ -41,9 +41,11 @@ ConnParams = namedtuple('ConnParams', ['credentials', 'is_mainnet'])
 @click.option('-r', '--regtest', is_flag=True, help='Use with regtest.')
 @click.option('-v', '--verbose', count=True,
               help='Print more information, may be used multiple times.')
+@click.option('-a', '--with-address', default=None, type=str,
+              help='Specify a confidential address to receive an asset.')
 @click.version_option()
 @click.pass_context
-def cli(ctx, service_url, conf_file, regtest, verbose):
+def cli(ctx, service_url, conf_file, regtest, verbose, with_address):
     """Liquid Swap Tool Command-Line Interface
     """
 
@@ -56,7 +58,7 @@ def cli(ctx, service_url, conf_file, regtest, verbose):
         'service_port': (None if is_mainnet else DEFAULT_REGTEST_RPC_PORT),
     }
 
-    ctx.obj = ConnParams(credentials, is_mainnet)
+    ctx.obj = ConnParams(credentials, is_mainnet, with_address)
 
 
 @cli.command(short_help='Show proposal in human readable format')
@@ -134,10 +136,11 @@ def propose(obj, asset_p, amount_p, asset_r, amount_r, output, fee_rate):
     with ConnCtx(obj.credentials, critical) as cc:
         connection = cc.connection
         do_initial_checks(connection, obj.is_mainnet)
+        address = obj.address
 
         proposal = swap.propose(btc2sat(amount_p), asset_p,
                                 btc2sat(amount_r), asset_r,
-                                connection, fee_rate)
+                                connection, fee_rate, address)
         encoded_payload = encode_payload(proposal)
         click.echo(encoded_payload, file=output)
 
@@ -158,6 +161,7 @@ def accept(obj, payload, output, fee_rate):
     with ConnCtx(obj.credentials, critical) as cc:
         connection = cc.connection
         do_initial_checks(connection, obj.is_mainnet)
+        address = obj.address
         proposal = decode_payload(payload.read())
 
         check_wallet_unlocked(connection)
@@ -166,7 +170,7 @@ def accept(obj, payload, output, fee_rate):
         ret = swap.parse_proposed(
             *[proposal[k] for k in PROPOSED_KEYS],
             connection)
-        accepted_swap = swap.accept(*ret, connection, fee_rate)
+        accepted_swap = swap.accept(*ret, connection, fee_rate, address)
         encoded_payload = encode_payload(accepted_swap)
         click.echo(encoded_payload, file=output)
 
