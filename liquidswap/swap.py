@@ -18,6 +18,7 @@ from liquidswap.constants import (
     IS_REPLACEABLE,
     DUMMY_ADDRESS,
     DUMMY_ADDRESS_CONFIDENTIAL,
+    ADDRESS_TYPE,
 )
 from liquidswap.util import (
     btc2sat,
@@ -36,7 +37,8 @@ def propose(amount_p, asset_p,
             amount_r, asset_r,
             connection,
             fee_rate=None,
-            address=None):
+            address=None,
+            address_type=ADDRESS_TYPE):
     """Propose a swap
 
     Proposer (p) sends amount_p of asset_p.
@@ -58,8 +60,11 @@ def propose(amount_p, asset_p,
     is_mainnet = connection.getblockchaininfo().get('chain') == 'liquidv1'
 
     if address == None:
-        c_address_p = connection.getnewaddress()
+        logging.info('No address provided, generate a new {} address'.format(address_type or 'default'))
+        c_address_p = connection.getnewaddress('""', address_type)
+        logging.info('Use new address {}'.format(c_address_p))
     else:
+        logging.info('Use provided address {}'.format(address))
         c_address_p = address
     u_address_p = connection.getaddressinfo(c_address_p)['unconfidential']
 
@@ -254,7 +259,8 @@ def accept(tx_p,
            map_amount_p, map_asset_p, unspents_details_p,
            connection,
            fee_rate=None,
-           address=None):
+           address=None,
+           address_type=ADDRESS_TYPE):
     """Accept a (parsed) swap proposal
 
     Fund, blind and sign the transaction. Should be used with outputs from
@@ -264,8 +270,11 @@ def accept(tx_p,
     logging.info('Accepting swap proposal [2/3]')
 
     if address == None:
-        c_address_r = connection.getnewaddress()
+        logging.info('No address provided, generate a new {} address'.format(address_type or 'default'))
+        c_address_r = connection.getnewaddress('""', address_type)
+        logging.info('Use new address {}'.format(c_address_r))
     else:
+        logging.info('Use provided address {}'.format(address))
         c_address_r = address
     u_address_r = connection.validateaddress(c_address_r)['unconfidential']
     u_address_p = connection.validateaddress(c_address_p)['unconfidential']
