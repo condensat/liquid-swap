@@ -3,6 +3,7 @@ ELEMENTS_MIN_VERSION = 170000
 
 NLOCKTIME = 0
 IS_REPLACEABLE = True
+ADDRESS_TYPE = None # Use the default for the wallet
 
 # Use a p2sh-segwit (current liquid default) confidential dummy address so that
 # fundrawtransaction allocates the right fees.
