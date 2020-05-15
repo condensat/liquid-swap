@@ -7,7 +7,7 @@ from collections import namedtuple
 from liquidswap import swap
 from liquidswap.encode import encode_payload, decode_payload
 from liquidswap.connect import ConnCtx, DEFAULT_REGTEST_RPC_PORT
-from liquidswap.constants import PROPOSED_KEYS, ACCEPTED_KEYS
+from liquidswap.constants import PROPOSED_KEYS, ACCEPTED_KEYS, ADDRESS_TYPE
 from liquidswap.util import (
     set_logging,
     do_initial_checks,
@@ -30,7 +30,7 @@ def critical(title='', message='', start_over=True):
         sys.exit(1)
 
 
-ConnParams = namedtuple('ConnParams', ['credentials', 'is_mainnet', 'address'])
+ConnParams = namedtuple('ConnParams', ['credentials', 'is_mainnet', 'address', 'address_type'])
 
 
 @click.group()
@@ -43,9 +43,12 @@ ConnParams = namedtuple('ConnParams', ['credentials', 'is_mainnet', 'address'])
               help='Print more information, may be used multiple times.')
 @click.option('-a', '--with-address', default=None, type=str,
               help='Specify a confidential address to receive an asset.')
+@click.option('-t', '--address-type', default=ADDRESS_TYPE, 
+              type=click.Choice(['legacy', 'p2sh-segwit', 'bech32'], case_sensitive=False),
+              help='Define the type of address to be used.')
 @click.version_option()
 @click.pass_context
-def cli(ctx, service_url, conf_file, regtest, verbose, with_address):
+def cli(ctx, service_url, conf_file, regtest, verbose, with_address, address_type):
     """Liquid Swap Tool Command-Line Interface
     """
 
@@ -58,7 +61,7 @@ def cli(ctx, service_url, conf_file, regtest, verbose, with_address):
         'service_port': (None if is_mainnet else DEFAULT_REGTEST_RPC_PORT),
     }
 
-    ctx.obj = ConnParams(credentials, is_mainnet, with_address)
+    ctx.obj = ConnParams(credentials, is_mainnet, with_address, address_type)
 
 
 @cli.command(short_help='Show proposal in human readable format')
@@ -137,10 +140,12 @@ def propose(obj, asset_p, amount_p, asset_r, amount_r, output, fee_rate):
         connection = cc.connection
         do_initial_checks(connection, obj.is_mainnet)
         address = obj.address
+        address_type = obj.address_type
 
         proposal = swap.propose(btc2sat(amount_p), asset_p,
                                 btc2sat(amount_r), asset_r,
-                                connection, fee_rate, address)
+                                connection, fee_rate, 
+                                address, address_type)
         encoded_payload = encode_payload(proposal)
         click.echo(encoded_payload, file=output)
 
@@ -162,6 +167,7 @@ def accept(obj, payload, output, fee_rate):
         connection = cc.connection
         do_initial_checks(connection, obj.is_mainnet)
         address = obj.address
+        address_type = obj.address_type
         proposal = decode_payload(payload.read())
 
         check_wallet_unlocked(connection)
@@ -170,7 +176,7 @@ def accept(obj, payload, output, fee_rate):
         ret = swap.parse_proposed(
             *[proposal[k] for k in PROPOSED_KEYS],
             connection)
-        accepted_swap = swap.accept(*ret, connection, fee_rate, address)
+        accepted_swap = swap.accept(*ret, connection, fee_rate, address, address_type)
         encoded_payload = encode_payload(accepted_swap)
         click.echo(encoded_payload, file=output)
 
