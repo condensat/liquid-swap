@@ -204,7 +204,7 @@ def parse_proposed(tx,
         if 'addresses' in output['scriptPubKey']:
             u_address = output['scriptPubKey']['addresses'][0]
 
-            if u_address == DUMMY_ADDRESS[is_mainnet]:
+            if u_address in [DUMMY_ADDRESS[is_mainnet], DUMMY_ADDRESS_BECH32[is_mainnet]]:
                 if asset_p:
                     raise UnexpectedValueError('Found more than one dummy '
                                                'address')
