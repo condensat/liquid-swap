@@ -271,7 +271,7 @@ def accept(tx_p,
            connection,
            fee_rate=None,
            address=None,
-           address_type=ADDRESS_TYPE):
+           address_type=None):
     """Accept a (parsed) swap proposal
 
     Fund, blind and sign the transaction. Should be used with outputs from
@@ -280,11 +280,26 @@ def accept(tx_p,
 
     logging.info('Accepting swap proposal [2/3]')
 
+    if connection.getaddressinfo(c_address_p)['iswitness'] == True:
+        address_type = 'bech32'
+    else:
+        address_type = 'p2sh-segwit'
+
     if address == None:
         logging.info('No address provided, generate a new {} address'.format(address_type or 'default'))
         c_address_r = connection.getnewaddress('""', address_type)
         logging.info('Use new address {}'.format(c_address_r))
     else:
+        address_info = connection.getaddressinfo(address)
+        if address_info['iswitness'] == True:
+            address_type_r = 'bech32'
+        elif address_info['isscript'] == True:
+            address_type_r = 'p2sh-segwit'
+        else:
+            address_type_r = 'legacy'
+        if address_type != address_type_r:
+            raise InvalidAddressError('Provided a {} address.'
+                'Provide an address of {} type.'.format(address_type_r, address_type))
         logging.info('Use provided address {}'.format(address))
         c_address_r = address
     u_address_r = connection.validateaddress(c_address_r)['unconfidential']
