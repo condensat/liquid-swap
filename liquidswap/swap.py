@@ -17,7 +17,9 @@ from liquidswap.constants import (
     NLOCKTIME,
     IS_REPLACEABLE,
     DUMMY_ADDRESS,
+    DUMMY_ADDRESS_BECH32,
     DUMMY_ADDRESS_CONFIDENTIAL,
+    DUMMY_ADDRESS_CONFIDENTIAL_BLECH32,
     ADDRESS_TYPE,
 )
 from liquidswap.util import (
@@ -61,19 +63,28 @@ def propose(amount_p, asset_p,
 
     if address == None:
         logging.info('No address provided, generate a new {} address'.format(address_type or 'default'))
-        c_address_p = connection.getnewaddress('""', address_type)
+        c_address_p = connection.getnewaddress("", address_type)
         logging.info('Use new address {}'.format(c_address_p))
     else:
         logging.info('Use provided address {}'.format(address))
         c_address_p = address
+        if connection.getaddressinfo(c_address_p)['iswitness'] == True:
+            address_type = 'bech32'
     u_address_p = connection.getaddressinfo(c_address_p)['unconfidential']
+
+    if address_type == 'bech32':
+        c_dummy_address = DUMMY_ADDRESS_CONFIDENTIAL_BLECH32[is_mainnet]
+        u_dummy_address = DUMMY_ADDRESS_BECH32[is_mainnet]
+    else:
+        c_dummy_address = DUMMY_ADDRESS_CONFIDENTIAL[is_mainnet]
+        u_dummy_address = DUMMY_ADDRESS[is_mainnet]
 
     txu = connection.createrawtransaction(
         [],
-        {DUMMY_ADDRESS_CONFIDENTIAL[is_mainnet]: sat2btc(amount_p)},
+        {c_dummy_address: sat2btc(amount_p)},
         NLOCKTIME,
         IS_REPLACEABLE,
-        {DUMMY_ADDRESS_CONFIDENTIAL[is_mainnet]: asset_p}
+        {c_dummy_address: asset_p}
     )
 
     # FIXME: consider locking unspents.
@@ -117,7 +128,7 @@ def propose(amount_p, asset_p,
         if 'addresses' in output['scriptPubKey']:
             u_address = output['scriptPubKey']['addresses'][0]
 
-            if u_address == DUMMY_ADDRESS[is_mainnet]:
+            if u_address == u_dummy_address:
                 key = u_address
             else:
                 c_address = connection.getaddressinfo(
