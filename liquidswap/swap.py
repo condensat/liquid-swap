@@ -280,30 +280,41 @@ def accept(tx_p,
 
     logging.info('Accepting swap proposal [2/3]')
 
-    if connection.getaddressinfo(c_address_p)['iswitness'] == True:
-        address_type = 'bech32'
-    else:
-        address_type = 'p2sh-segwit'
+    # If the receiver defined an address, just use it no matter what the proposer did.
+    # If the receiver defined an address_type, ignore the type of the proposer's address 
+    # and get a new address of the said type.
+    # If the receiver provides nothing, then get a new address of the same type than the proposer's.
 
     if address == None:
-        logging.info('No address provided, generate a new {} address'.format(address_type or 'default'))
-        c_address_r = connection.getnewaddress('""', address_type)
-        logging.info('Use new address {}'.format(c_address_r))
-    else:
-        address_info = connection.getaddressinfo(address)
-        if address_info['iswitness'] == True:
-            address_type_r = 'bech32'
+        address_info = connection.validateaddress(c_address_p)
+        # If an address type is specified, then we just generate a new address of that type
+        if address_type != None:
+            pass
+        # If not, we get the type of the proposer address
+        elif address_info['iswitness'] == True:
+            address_type = 'bech32'
         elif address_info['isscript'] == True:
-            address_type_r = 'p2sh-segwit'
+            address_type = 'p2sh-segwit'
         else:
-            address_type_r = 'legacy'
-        if address_type != address_type_r:
-            raise InvalidAddressError('Provided a {} address.'
-                'Provide an address of {} type.'.format(address_type_r, address_type))
+            address_type = 'legacy'
+        # generate a new address of the same type than the proposer's
+        logging.info('No address provided, generate a new {} address'.format(address_type))
+        c_address_r = connection.getnewaddress('', address_type)
+        u_address_r = connection.validateaddress(c_address_r)['unconfidential']
+        logging.info('Use new address {}'.format(c_address_r))
+        u_address_p = address_info['unconfidential']
+    else:
+        # Validate the address provided
+        if not connection.validateaddress(address)['isvalid']:
+            raise InvalidAddressError('{} is not a valid address.'.format(address))
+        # Get the addressinfo and check that it's mine
+        address_info = connection.getaddressinfo(address)
+        if not address_info['ismine']:
+            raise UnexpectedValueError('{} is not your address.'.format(address))
         logging.info('Use provided address {}'.format(address))
         c_address_r = address
-    u_address_r = connection.validateaddress(c_address_r)['unconfidential']
-    u_address_p = connection.validateaddress(c_address_p)['unconfidential']
+        u_address_r = address_info['unconfidential']
+        u_address_p = connection.validateaddress(c_address_p)['unconfidential']
     logging.debug('Receiver address: {}'.format(u_address_r))
     logging.debug('Proposer address: {}'.format(u_address_p))
 
