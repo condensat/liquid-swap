@@ -42,10 +42,12 @@ ConnParams = namedtuple('ConnParams', ['credentials', 'is_mainnet', 'address', '
 @click.option('-v', '--verbose', count=True,
               help='Print more information, may be used multiple times.')
 @click.option('-a', '--with-address', default=None, type=str,
-              help='Specify a confidential address to receive an asset.')
+              help='Specify a confidential address to receive an asset. '
+              'Supersed the address-type option.')
 @click.option('-t', '--address-type', default=ADDRESS_TYPE, 
               type=click.Choice(['legacy', 'p2sh-segwit', 'bech32'], case_sensitive=False),
-              help='Define the type of address to be used.')
+              help='Define the type of address to be used. If with-address is defined, '
+              'this will be superseded by the type of the provided address.')
 @click.version_option()
 @click.pass_context
 def cli(ctx, service_url, conf_file, regtest, verbose, with_address, address_type):
