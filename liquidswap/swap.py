@@ -317,6 +317,13 @@ def accept(tx_p,
         address_info = connection.getaddressinfo(address)
         if not address_info['ismine']:
             raise UnexpectedValueError('{} is not your address.'.format(address))
+        # Get the address_type for creating the raw transaction
+        if address_info['iswitness'] == True:
+            address_type = 'bech32'
+        elif address_info['isscript'] == True:
+            address_type = 'p2sh-segwit'
+        else:
+            address_type = 'legacy'
         logging.info('Use provided address {}'.format(address))
         c_address_r = address
         u_address_r = address_info['unconfidential']
