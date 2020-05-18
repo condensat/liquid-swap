@@ -331,12 +331,25 @@ def accept(tx_p,
     logging.debug('Receiver address: {}'.format(u_address_r))
     logging.debug('Proposer address: {}'.format(u_address_p))
 
+    # We need to use dummy once more. If we use the proposer address to 
+    # create the first draft of the transaction, then `fundrawtransaction`
+    # would populate the outputs with the same address type than the proposer's.
+    if address_type == 'bech32':
+        c_dummy_address = DUMMY_ADDRESS_CONFIDENTIAL_BLECH32[is_mainnet]
+        u_dummy_address = DUMMY_ADDRESS_BECH32[is_mainnet]
+    else:
+        c_dummy_address = DUMMY_ADDRESS_CONFIDENTIAL[is_mainnet]
+        u_dummy_address = DUMMY_ADDRESS[is_mainnet]
+    # TODO: Maybe that would be nice to have a dummy legacy for the case the receiver
+    # wants one, but since it should be rare we default to p2sh for changes even if 
+    # the receiver explicitly asked for legacy.
+
     txu = connection.createrawtransaction(
         [],
-        {c_address_p: sat2btc(amount_r)},
+        {c_dummy_address: sat2btc(amount_r)},
         NLOCKTIME,
         IS_REPLACEABLE,
-        {c_address_p: asset_r}
+        {c_dummy_address: asset_r}
     )
 
     details = {
@@ -374,7 +387,8 @@ def accept(tx_p,
         if 'addresses' in output['scriptPubKey']:
             u_address = output['scriptPubKey']['addresses'][0]
 
-            if u_address == u_address_p:
+            # We check for the dummy and replace it with the actual address
+            if u_address == u_dummy_address:
                 c_address = c_address_p
             else:
                 c_address = connection.getaddressinfo(
