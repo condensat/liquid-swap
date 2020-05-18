@@ -311,11 +311,11 @@ def accept(tx_p,
         u_address_p = address_info['unconfidential']
     else:
         # Validate the address provided
-        if not connection.validateaddress(address)['isvalid']:
+        if connection.validateaddress(address)['isvalid'] == False:
             raise InvalidAddressError('{} is not a valid address.'.format(address))
         # Get the addressinfo and check that it's mine
         address_info = connection.getaddressinfo(address)
-        if not address_info['ismine']:
+        if address_info['ismine'] == False:
             raise UnexpectedValueError('{} is not your address.'.format(address))
         # Get the address_type for creating the raw transaction
         if address_info['iswitness'] == True:
