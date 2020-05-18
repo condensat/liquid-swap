@@ -280,10 +280,16 @@ def accept(tx_p,
 
     logging.info('Accepting swap proposal [2/3]')
 
-    # If the receiver defined an address, just use it no matter what the proposer did.
+    is_mainnet = connection.getblockchaininfo().get('chain') == 'liquidv1'
+    # Test if the proposal is for the same network than we are currently on.
+    # We also need it to get the right dummy address below. 
+    # TODO: Maybe make a quick look up on the proposer address prefix and 
+    # raise an error if the network is wrong?
+
+    # If the receiver provides nothing, then get a new address of the same type than the proposer's.
     # If the receiver defined an address_type, ignore the type of the proposer's address 
     # and get a new address of the said type.
-    # If the receiver provides nothing, then get a new address of the same type than the proposer's.
+    # If the receiver defined an address, just use it no matter what the proposer did.
 
     if address == None:
         address_info = connection.validateaddress(c_address_p)
