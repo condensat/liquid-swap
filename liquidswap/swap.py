@@ -129,7 +129,7 @@ def propose(amount_p, asset_p,
             u_address = output['scriptPubKey']['addresses'][0]
 
             if u_address == u_dummy_address:
-                key = u_address
+                key = DUMMY_ADDRESS_CONFIDENTIAL[is_mainnet]
             else:
                 c_address = connection.getaddressinfo(
                     u_address)['confidential']
